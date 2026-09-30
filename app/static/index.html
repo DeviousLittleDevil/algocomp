@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Algorithm Arena — empirical equivalence &amp; performance comparison</title>
+<meta name="description" content="Compare two implementations of an algorithm: do they behave the same on the inputs you test, and which is faster?">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
+<link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">⚔</span>
+      <div>
+        <h1>Algorithm Arena</h1>
+        <p class="tagline">Do these two implementations do the same job — and which one does it better?</p>
+      </div>
+    </div>
+    <div class="header-status">
+      <span id="sandbox-chip" class="chip chip-muted" title="Sandbox isolation level in use">
+        <span class="chip-dot"></span><span id="sandbox-label">checking sandbox…</span>
+      </span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ==================== EDITORS ==================== -->
+  <section class="panel" aria-labelledby="editors-title">
+    <div class="panel-head">
+      <h2 id="editors-title">The two implementations</h2>
+      <div class="panel-actions">
+        <label class="field field-inline">
+          <span>Language</span>
+          <select id="language">
+            <option value="python">Python 3</option>
+            <option value="javascript" disabled>JavaScript (planned)</option>
+            <option value="cpp" disabled>C++ (planned)</option>
+          </select>
+        </label>
+        <label class="field field-inline">
+          <span>How it is run</span>
+          <select id="protocol">
+            <option value="function">Call a function</option>
+            <option value="stdio">stdin → stdout</option>
+          </select>
+        </label>
+        <label class="field field-inline" id="entry-point-field">
+          <span>Entry point</span>
+          <input id="entry-point" type="text" value="solve" size="10" spellcheck="false">
+        </label>
+        <label class="checkbox checkbox-inline" id="spread-field" title="Call solve(*value) instead of solve(value)">
+          <input type="checkbox" id="spread-args"><span>Spread list args</span>
+        </label>
+      </div>
+    </div>
+
+    <p class="hint" id="protocol-hint">
+      Your code should define <code>solve(data)</code> and return the result. It is called once per test case
+      with the generated input; anything it prints is captured but ignored.
+    </p>
+
+    <div class="editors">
+      <div class="editor-card">
+        <div class="editor-head">
+          <span class="swatch swatch-a"></span>
+          <input class="editor-name" id="name-a" value="Algorithm A" aria-label="Name for Algorithm A">
+          <span class="editor-meta" id="meta-a">0 lines</span>
+        </div>
+        <div class="editor-host" id="editor-a"></div>
+      </div>
+      <div class="editor-card">
+        <div class="editor-head">
+          <span class="swatch swatch-b"></span>
+          <input class="editor-name" id="name-b" value="Algorithm B" aria-label="Name for Algorithm B">
+          <span class="editor-meta" id="meta-b">0 lines</span>
+        </div>
+        <div class="editor-host" id="editor-b"></div>
+      </div>
+    </div>
+
+    <details class="examples">
+      <summary>Load an example pair</summary>
+      <div class="example-list" id="example-list"></div>
+    </details>
+  </section>
+
+  <!-- ==================== CONFIGURATION ==================== -->
+  <section class="panel" aria-labelledby="config-title">
+    <div class="panel-head"><h2 id="config-title">Test configuration</h2></div>
+
+    <div class="config-grid">
+
+      <fieldset class="config-card">
+        <legend>Input shape</legend>
+        <label class="field">
+          <span>What the algorithm receives</span>
+          <select id="schema"></select>
+        </label>
+        <p class="hint hint-tight" id="schema-hint"></p>
+        <div class="field-row">
+          <label class="field">
+            <span>Min value</span>
+            <input id="min-value" type="number" value="-1000" step="any">
+          </label>
+          <label class="field">
+            <span>Max value</span>
+            <input id="max-value" type="number" value="1000" step="any">
+          </label>
+        </div>
+        <div class="field-row">
+          <label class="field">
+            <span>Random tests</span>
+            <input id="test-count" type="number" value="25" min="0" max="5000">
+          </label>
+          <label class="field">
+            <span>Input size</span>
+            <input id="test-size" type="number" value="200" min="0" max="50000">
+          </label>
+        </div>
+        <label class="field">
+          <span>Random seed <em>— same seed, same tests, reproducible run</em></span>
+          <div class="field-row field-row-tight">
+            <input id="seed" type="number" value="12345" min="0">
+            <button type="button" class="btn btn-ghost" id="reseed">New seed</button>
+          </div>
+        </label>
+      </fieldset>
+
+      <fieldset class="config-card">
+        <legend>Test strategies</legend>
+        <div class="strategy-list" id="strategy-list"></div>
+        <div class="field-row" id="large-options">
+          <label class="field">
+            <span>Large = size ×</span>
+            <input id="large-factor" type="number" value="20" min="2" max="500">
+          </label>
+          <label class="field">
+            <span>Large tests</span>
+            <input id="large-count" type="number" value="2" min="0" max="8">
+          </label>
+        </div>
+        <label class="field">
+          <span>Your own test cases <em>— one JSON value per line</em></span>
+          <textarea id="user-cases" rows="4" spellcheck="false"
+            placeholder='[3, 1, 2]&#10;"hello"&#10;42'></textarea>
+        </label>
+        <p class="hint hint-tight">A pasted JSON array of lists also works — each element becomes one test case.</p>
+      </fieldset>
+
+      <fieldset class="config-card">
+        <legend>Comparing outputs</legend>
+        <label class="field">
+          <span>Comparison mode</span>
+          <select id="comparison-mode"></select>
+        </label>
+        <p class="hint hint-tight" id="mode-hint"></p>
+        <div class="field-row" id="tolerance-fields">
+          <label class="field">
+            <span>Relative tolerance</span>
+            <input id="rel-tolerance" type="text" value="1e-9" spellcheck="false">
+          </label>
+          <label class="field">
+            <span>Absolute tolerance</span>
+            <input id="abs-tolerance" type="text" value="1e-12" spellcheck="false">
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset class="config-card">
+        <legend>Accuracy <em class="legend-note">optional</em></legend>
+        <p class="hint hint-tight">
+          For numerical or approximate algorithms, score both sides against a known-correct implementation
+          and report the actual error instead of only comparing the two.
+        </p>
+        <label class="field">
+          <span>Reference implementation (Python, same entry point)</span>
+          <textarea id="reference-code" rows="5" spellcheck="false"
+            placeholder="def solve(data):&#10;    return math.sqrt(float(data))"></textarea>
+        </label>
+        <label class="field">
+          <span>…or expected outputs <em>— JSON object keyed by test-case id</em></span>
+          <textarea id="expected" rows="3" spellcheck="false" placeholder='{"user-1": 3}'></textarea>
+        </label>
+      </fieldset>
+
+      <fieldset class="config-card">
+        <legend>Benchmarking</legend>
+        <label class="checkbox">
+          <input type="checkbox" id="benchmark-enabled" checked>
+          <span>Benchmark both implementations <em>— only runs if the outputs match</em></span>
+        </label>
+        <div class="field-row">
+          <label class="field">
+            <span>Iterations</span>
+            <input id="iterations" type="number" value="5" min="1" max="50">
+          </label>
+          <label class="field">
+            <span>Warm-up runs</span>
+            <input id="warmup" type="number" value="1" min="0" max="5">
+          </label>
+        </div>
+        <div class="field-row">
+          <label class="field">
+            <span>Tests per iteration</span>
+            <input id="bench-tests" type="number" value="40" min="1" max="500">
+          </label>
+          <label class="field">
+            <span>Noise floor %</span>
+            <input id="min-gap" type="number" value="5" min="0" max="100" step="0.5">
+          </label>
+        </div>
+        <p class="hint hint-tight">
+          Differences smaller than the noise floor are reported as “no significant difference”
+          rather than as a winner.
+        </p>
+      </fieldset>
+
+      <fieldset class="config-card">
+        <legend>Sandbox limits <em class="legend-note">advanced</em></legend>
+        <div class="field-row">
+          <label class="field">
+            <span>CPU seconds / test</span>
+            <input id="limit-cpu" type="number" value="5" min="1" max="30">
+          </label>
+          <label class="field">
+            <span>Wall seconds / test</span>
+            <input id="limit-wall" type="number" value="10" min="0.1" max="60" step="0.1">
+          </label>
+        </div>
+        <div class="field-row">
+          <label class="field">
+            <span>Memory MB</span>
+            <input id="limit-memory" type="number" value="256" min="64" max="2048">
+          </label>
+          <label class="field">
+            <span>Output cap KB</span>
+            <input id="limit-output" type="number" value="64" min="1" max="256">
+          </label>
+        </div>
+        <p class="hint hint-tight">
+          Each test case is killed if it exceeds its budget. Submitted code runs in a separate,
+          unprivileged process with no network access and no access outside its own directory.
+        </p>
+      </fieldset>
+
+    </div>
+  </section>
+
+  <!-- ==================== RUN ==================== -->
+  <section class="run-bar">
+    <button type="button" class="btn btn-primary btn-run" id="run-button">
+      <span class="btn-icon" aria-hidden="true">▶</span> Run Comparison
+    </button>
+    <button type="button" class="btn btn-ghost" id="stop-button" hidden
+      title="Stop polling for results. The comparison keeps running on the server.">Stop waiting</button>
+    <div class="progress-wrap" id="progress-wrap" hidden>
+      <div class="progress-track"><div class="progress-bar" id="progress-bar"></div></div>
+      <div class="progress-meta">
+        <span id="progress-stage">Starting…</span>
+        <span id="progress-pct">0%</span>
+      </div>
+    </div>
+    <div class="run-summary" id="run-summary" hidden></div>
+  </section>
+
+  <div id="error-banner" class="banner banner-error" hidden></div>
+
+  <!-- ==================== RESULTS ==================== -->
+  <section id="results" hidden aria-live="polite"></section>
+
+  <footer class="site-footer">
+    <p>
+      <strong>Algorithm Arena</strong> — a university project on empirical algorithm comparison.
+      Agreement on a finite set of tests is evidence of similar behaviour, never a proof of equivalence.
+    </p>
+  </footer>
+</main>
+
+<script src="/static/editor.js"></script>
+<script src="/static/charts.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>
