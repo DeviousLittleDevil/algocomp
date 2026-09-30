@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Sandbox scratch space (app/config.py: TEMP_ROOT)
+/tmp/algorithm-arena/
+
+# Node (only used by the optional UI smoke test)
+node_modules/
+package-lock.json
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
